@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PHANTOM TANK@EndlessChian</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+	<link rel="stylesheet" href="NLP.css">
+	<script src="NTR.js" defer></script>
+</head>
+<body>
+    <div id="body">
+        <div id="input">
+            
+            <span id="image0" class="image-span">
+                <form id="form0" action="" enctype="multipart/form-data" class="red green blue">
+                    <textarea id="background0" placeholder="background0" onchange="script:color_create(this);">0</textarea>
+                    <input type="file" title="image0" onchange="scripts:lookImage(this);">
+                    <div class="alpha">
+                        <span class="on" onclick="script:this.classList.toggle('on');cls0.classList.toggle('red');grey(File0);">RED</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls0.classList.toggle('green');grey(File0);">GREEN</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls0.classList.toggle('blue');grey(File0);">BLUE</span>
+                    </div>
+                </form>
+                <canvas></canvas><img src="" alt="" onclick="scripts:if(File0.files.length)save_image(img0, File0.files[0].name);">
+                <span class="mask"></span>
+            </span>
+            <span id="image1" class="image-span">
+                <form id="form1" action="" enctype="multipart/form-data" class="red green blue">
+                    <textarea id="background1" placeholder="background1" onchange="script:color_create(this);">255</textarea>
+                    <input type="file" title="image1" onchange="scripts:lookImage(this);">
+                    <div class="alpha">
+                        <span class="on" onclick="script:this.classList.toggle('on');cls1.classList.toggle('red');grey(File1);">RED</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls1.classList.toggle('green');grey(File1);">GREEN</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls1.classList.toggle('blue');grey(File1);">BLUE</span>
+                    </div>
+                </form>
+                <canvas></canvas><img src="" alt="" onclick="scripts:if(File1.files.length)save_image(img1, File1.files[0].name);">
+                <span class="mask"></span>
+            </span>
+        </div>
+        <span id="output">
+            <span>
+                <span onclick="script:tank_create();">create</span>
+                <span id="convert" class="" onclick="script:this.classList.toggle('revert');color_revert();">0</span>
+            </span>
+            <canvas></canvas>
+            <img src="" alt="" value="save" 
+            onclick="scripts:if(File0.files.length&&File1.files.length)save_image(out, File0.files[0].name.slice(-20)+'-'+cls0.className.replaceAll(' ','_')+'+'+File1.files[0].name.slice(-20)+'-'+cls1.className.replaceAll(' ','_')+'.png');">
+            <span class="mask"></span>
+        </span>
+    </div>
+</body>
+</html>
