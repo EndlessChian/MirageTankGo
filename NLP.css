@@ -228,24 +228,52 @@ span.image-span > img{
     transition: 0.1s linear;
 }
 
-span.mask{
+span
+.mask{
     display: none;
     width: var(--mask-size);
     height: var(--mask-size);
     position: fixed;
     font-size: 10px;
+    font-weight: bolder;
     transform-origin: top left;
     background-color: aliceblue;
     background-repeat: no-repeat;
-    border: rgb(248, 160, 213) 1px solid;
-    border-radius: 50%;
+    border: #f8a0d5 1px solid;
+    border-radius: 50% 50% 0;
     transform: scale(1.5);
-    text-align: center;
-    place-content: flex-end;
-    padding: 15px 0;
+    text-align: right;
+    place-content: end;
     z-index: 10;
+    border-bottom-color: aliceblue;
 }
 
 img{
     z-index: 3;
+}
+
+.mask>p{
+    font-weight: bolder;
+    place-content: flex-end;
+    backdrop-filter: brightness(0.5) blur(4px);
+    color: white;
+    /*background: inherit;
+    background-clip: text;
+    color: transparent;
+    filter: invert(1) grayscale(0.5) contrast(1.5) brightness(1.5);
+    height: inherit;*/
+    border-radius: 50% 0 0;
+    margin: 0;
+}
+
+#weightSlider{
+    display: none;
+}
+
+#weightValue{
+    display: none;
+}
+
+#weightMode.on{
+    background: linear-gradient(to right,#c4c4c4,#66aa00);
 }

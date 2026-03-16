@@ -8,26 +8,40 @@ let cls1 = document.querySelector('#form1');
 let color0 = document.querySelector('#background0');
 let color1 = document.querySelector('#background1');
 let color_convert = document.querySelector('#convert');
+let can0 = document.querySelector('#image0>canvas');
+let can1 = document.querySelector('#image1>canvas');
+let can2 = document.querySelector('#output>canvas');
+
+// 获取新增控件
+const weightMode = document.getElementById('weightMode');
+const weightSlider = document.getElementById('weightSlider');
+const weightValue = document.getElementById('weightValue');
+
+let ctx0, ctx1, ctx2;
+let color_mode = false;
 
 const lookImage = (input) => {
-    
+
     if(input.files.length){
         var file = input.files[0];
         if(file.type.search('image/') == 0){
             var filereader = new FileReader();
-            var img = new Image();
             filereader.onload = function(evt){
                 if (filereader.readyState == 2){
                     var i = document.querySelector('#' + input.title + '>img');
-                    i.src = img.src = evt.target.result;
-                    img.onload = function(){
-                        var scale = document.querySelector('#' + input.title + '>form>div.alpha').offsetWidth / img.naturalWidth;
-                        i.style.width = parseInt(scale * img.width) + 'px';
-
+                    i.src = evt.target.result;
+                    i.onload = function(){
+                        var scale = document.querySelector('#' + input.title + '>form>div.alpha').offsetWidth / i.naturalWidth;
                         var ctx = document.querySelector('#' + input.title + '>canvas');
-                        ctx.height = img.height;
-                        ctx.width = img.width;
-                        ctx.getContext('2d').drawImage(img, 0, 0);
+                        ctx.width = i.naturalWidth;
+                        ctx.height = i.naturalHeight;
+                        ctx.getContext('2d').drawImage(i, 0, 0);
+
+                        i.style.width = parseInt(scale * i.naturalWidth) + 'px';
+                        i.style.height = parseInt(scale * i.naturalHeight) + 'px';
+                        var mask = document.querySelector('#' + input.title + '>span.mask');
+                        mask.style.backgroundImage = `url(${i.src})`;
+                        i.onload = null;
                     }
                 }
             }
@@ -36,17 +50,23 @@ const lookImage = (input) => {
     }
 }
 
-const grey = (input) => {
+function gray(input){
     if (input.files.length == 0)
         return;
     var im = input.title.at(-1), li = [];
     if ((im == 0 && !( img0.height && img0.width))||
         ((im == 1 && !( img1.height && img1.width)))) return console.log('Error image'+im+' size.');
 
-    (im == 0? cls0: cls1).classList.forEach(c =>
+    var cls = (im == 0? cls0: cls1).classList;
+    cls.forEach(c =>
         li.push(c == 'red'? 0: c == 'green'? 1: 2)
     );
-    if (li.length == 0) return console.log('Error image'+im+' color.');
+    if (li.length == 0){
+        console.log('No image'+im+' colors.');
+        return;
+//        cls.value = 'red green blue';
+//        li = [0, 1, 2];
+    }
     var ctx = document.querySelector('#image'+im+'>canvas');
     var data = ctx.getContext('2d').getImageData(0, 0, ctx.width, ctx.height).data;
     var idata = new ImageData(ctx.width, ctx.height);
@@ -54,14 +74,13 @@ const grey = (input) => {
     arr.fill(255);
     for (var i=0, j=data.length, k=0, u=li.length; i < j; i++,k=0){
         li.forEach(c => k += data[i + c]);
-        arr[i++] = arr[i++] = arr[i++] = parseInt(k/u);
+        arr[i++] = arr[i++] = arr[i++] = parseInt(Math.round(k/u));
     }
-    var ictx = document.createElement('canvas');
+    var ictx = document.querySelector("#output>canvas");
     ictx.width = ctx.width;
     ictx.height = ctx.height;
     ictx.getContext('2d').putImageData(idata, 0, 0);
     (im == 0? img0: img1).src = ictx.toDataURL('image/png');
-    delete ictx;
 }
 
 const between = (x, ab) => ab[0]<x && x<ab[1];
@@ -148,20 +167,74 @@ function optimiz(A,B,C,D,E,F,G,H){
     return [e1 + G, e2 + H];
 }
 
-function phantom_tank(bk, img0, img1, bk0, bk1){
-    const c1 = Float32Array.from(img0);
-    const c2 = Float32Array.from(img1);
-    var D = c2.map((n, i) => n - c1.at(i));
+function minmax(arr){
+    var min = arr[0], max = arr[0];
+    arr.forEach((n) => {
+        if (n > max) max = n;
+        else if (n < min) min = n;
+    })
+    return [min, max];
+}
+
+function phantom_tank(bk, c1, c2, bk0, bk1, D){
     var c1_min, c1_max, c2_min, c2_max;
+    var d_min, d_max;
     c1_min = c1_max = c1[0];
-    c1.forEach((n) => {
+    c2_min = c2_max = c2[0];
+    d_min = d_max = D[0];
+    D.forEach((n, i) => {
+        if (n > d_max) d_max = n;
+        else if (n < d_min) d_min = n;
+        n = c1[i<<2];
         if (n > c1_max) c1_max = n;
         else if (n < c1_min) c1_min = n;
-    })
-    c2_min = c2_max = c2[0];
-    c2.forEach((n) => {
+        n = c2[i<<2];
         if (n > c2_max) c2_max = n;
         else if (n < c2_min) c2_min = n;
+    })
+    console.log(d_min, d_max, c1_min, c2_max);
+
+    const k = Math.min(255 / (c2_max - c1_min - d_min), 255 / (c1_max - c1_min), 255 / (c2_max - c2_min));
+    const de_area = [- k * d_min, 255 - k * d_max];
+    const e1_area = [- k * c1_min, 255 - k * c1_max];
+    const e2_area = [- k * c2_min, 255 - k * c2_max];
+    const set_point = (1 - k) * 255/2;
+    console.log('e1', e1_area);
+    console.log('e2', e2_area);
+    console.log('de', de_area);
+    var e1, e2, ee, de;
+    ee = optimiz(...e1_area, ...e2_area, ...de_area, set_point, set_point);
+    e1 = ee[0]; e2 = ee[1];
+    de = e2 - e1;
+    console.log(k, e1, e2);
+//    const x1 = c1.map(n => n*k + e1);
+//    var x2 = c2.map(n => n*k + e2);
+
+    const db = 1 / (bk1 - bk0);
+    var q, p, a;
+    D.forEach((d, i) => {
+        a = (k * d + de) * db;
+        q = 1 - a;
+        i<<=2;
+        p = Math.round((k * c1[i] + e1 - bk0 * a) / Math.max(db, q));
+        bk[i++] = bk[i++] = bk[i++] = p;
+        bk[i] = Math.round(q * 255);
+    });
+}
+
+function phantom_tank_color(bk, c1, c2, bk0, bk1, D){
+    var c1_min, c1_max, c2_min, c2_max;
+    c1_min = c1_max = c1[0];
+    c1.forEach((n, i) => {
+        if ((i+1) & 3)
+            if (n > c1_max) c1_max = n;
+            else if (n < c1_min) c1_min = n;
+    })
+    c2_min = c2_max = c2[0];
+    c2.forEach((n, i) => {
+        if ((i+1) & 3)
+            if (n > c2_max) c2_max = n;
+            else if (n < c2_min) c2_min = n;
     })
     var d_min, d_max;
     d_min = d_max = D[0];
@@ -183,90 +256,103 @@ function phantom_tank(bk, img0, img1, bk0, bk1){
     ee = optimiz(...e1_area, ...e2_area, ...de_area, set_point, set_point);
     e1 = ee[0]; e2 = ee[1];
     de = e2 - e1;
-    console.log(k, e1, e2);
+    console.log('k', k, 'e1', e1, 'e2', e2);
 //    const x1 = c1.map(n => n*k + e1);
 //    var x2 = c2.map(n => n*k + e2);
 
-    const db = (bk1 - bk0);
-//    const a = D.map(n => Math.max(0, (k * d + de) / db));
-//    const q_ = a.map(n => Math.max(0, 1 - n));
-//    const p_ = q_.map((n, i) => Math.min(255, Math.round((x1[i] - bk0*a[i]) / Math.max(0.0001, n))));
-//    const p = Uint8Array.from(p_);
-//    const q = Uint8Array.from(q_.map(n => Math.min(255, Math.round(n * 255))));
-    var p, q, a, x1;
+    const db = 1 / (bk1 - bk0);
+    var q, a, _q;
     D.forEach((d, i) => {
-        a = Math.max(0, (k * d + de) / db);
-        q = Math.max(0, 1 - a);
-        x1 = k * c1[i] + e1;
-        p = (q>0.0001)? Math.min(255, Math.round(Math.max(0, x1 - bk0*a) / q)): 255;
-        bk[i*=4]=bk[++i]=bk[++i] = p;
-        bk[++i] = Math.min(255, Math.round(q * 255));
+        a = (k * d + de) * db;
+        q = 1 - a;
+        a = e1 - bk0 * a;
+        i <<= 2;
+        // p = (b2*a1 - b1*a2) / ((b2 - a2) + (a1 - b1))
+        if (q >= db){
+            _q = 1 / q;
+        } else {
+            _q = bk1 - bk0;
+        }
+        bk[i] = Math.round((k * c1[i] + a) * _q); i++;
+        bk[i] = Math.round((k * c1[i] + a) * _q); i++;
+        bk[i] = Math.round((k * c1[i] + a) * _q); i++;
+        bk[i] = Math.round(q * 255);
     });
 }
 
-function paste_image(img, w, bk, w1, center){
-    var h = img.length/w;
-    var h1 = bk.length/w1;
-    var b_c = [parseInt(w1/2), parseInt(h1/2)];
-    var i_c = [parseInt(w/2), parseInt(h/2)];
-    var pos = [b_c[0]+center[0]-i_c[0], b_c[1]+center[1]-i_c[1]];
-    for (var i=0, j, x, y; i<h; i++){
-            y = i+pos[1];
-        if (0 <= y && y < h1)
-            for (j=0; j<w; j++){
-            x = j+pos[0];
-            if (0 <= x && x < w1)
-                bk[y*w1+x] = img[i*w+j];
-        }
-    }
-    console.log(b_c, i_c, pos);
-}
-
 function tank_create(){
-    if(File0.files.length == 0 || File1.files.length == 0 || ! img0.src || ! img1.src || 
+    if(File0.files.length == 0 || File1.files.length == 0 || ! img0.src || ! img1.src ||
         ! img0.naturalWidth || ! img1.naturalWidth || ! img0.naturalHeight || ! img1.naturalHeight)
-        return console.log('onclick: wrroy Image type.');
-    var a = parseInt(color0.value);
-    var b = parseInt(color1.value);
+        return console.log('onclick: worry Image type.');
+    var a = parseInt(color0.value), b = parseInt(color1.value), mid = (a+b)>>1;
     if(isNaN(a) || isNaN(b) || a < 0 || a >= b || b > 255)
-        return console.log('Color unexcepted.', a, b);
+        return console.log('Color dis-excepted.', a, b);
+    var alpha = parseFloat(weightSlider.value), beta=1-alpha;
+    if(isNaN(alpha) || alpha < 0 || alpha > 1)
+        return console.log('Weight dis-excepted.', alpha);
     var size0 = [img0.naturalWidth, img0.naturalHeight], s0 = size0[0]*size0[1],
      size1 = [img1.naturalWidth, img1.naturalHeight], s1 = size1[0]*size1[1],
       scale0 = Math.sqrt((s1/s0 + 1)/2), scale1 = Math.sqrt((s0/s1 + 1)/2),
     size = [
         parseInt((size0[0]+size1[0])/2),
         parseInt((size0[1]+size1[1])/2)
-    ], SS = size[0]*size[1],
-     arr0 = new Uint8Array(SS).fill((a+b)/2),
-     arr1 = new Uint8Array(SS).fill((a+b)/2);
+    ];
     size0 = size0.map(c=>parseInt(c*scale0));
     size1 = size1.map(c=>parseInt(c*scale1));
     var ctx = document.querySelector("#output>canvas");
-    ctx.width = size0[0];
-    ctx.height = size0[1];
-    var c = ctx.getContext('2d', { willReadFrequently: true });
-    c.drawImage(img0, 0, 0, ...size0);
-    var data = c.getImageData(0, 0, ...size0);
-    var temp = new Uint8Array(size0[0] * size0[1]);
-    for (var i=0, j=temp.length; i<j; i++) temp[i] = data.data[i*4];
-    paste_image(temp, size0[0], arr0, size[0], [0,0]);
-    c.clearRect(0, 0, ...size0);
-
-    ctx.width = size1[0];
-    ctx.height = size1[1];
-    c.drawImage(img1, 0, 0, ...size1);
-    data = c.getImageData(0, 0, ...size1);
-    temp = new Uint8Array(size1[0] * size1[1]);
-    for (var i=0, j=temp.length; i<j; i++) temp[i] = data.data[i*4];
-    paste_image(temp, size1[0], arr1, size[0], [0,0]);
-    c.clearRect(0, 0, ...size1);
-
     ctx.width = size[0];
     ctx.height = size[1];
-    data = c.getImageData(0, 0, ...size);
-    phantom_tank(data.data, arr0, arr1, a, b);
+    var c = ctx.getContext('2d', { willReadFrequently: true });
+    // 填充背景
+    c.fillStyle = `rgb(${mid},${mid},${mid})`;
+    c.fillRect(0, 0, ...size);
+    c.drawImage(img0, (size[0]-size0[0])>>1, (size[1]-size0[1])>>1, ...size0);
+    var arr0 = c.getImageData(0, 0, ...size).data, data0 = arr0;
+    if (color_mode){
+        c.drawImage(can0,
+            0, 0, img0.naturalWidth, img0.naturalHeight,
+            (size[0]-size0[0])>>1, (size[1]-size0[1])>>1, ...size0);
+        data0 = c.getImageData(0, 0, ...size).data;
+    }
+
+    c.fillRect(0, 0, ...size);
+    c.drawImage(img1, (size[0]-size1[0])>>1, (size[1]-size1[1])>>1, ...size1);
+    var arr1 = c.getImageData(0, 0, ...size).data, data1 = arr1;
+    if (color_mode){
+        c.drawImage(can1,
+            0, 0, img1.naturalWidth, img1.naturalHeight,
+            (size[0]-size1[0])>>1, (size[1]-size1[1])>>1, ...size1);
+        data1 = c.getImageData(0, 0, ...size).data;
+    }
+
+    var D = new Int16Array(size[0]*size[1]);
+    for (var i=0, j=D.length; i<j; i++) D[i] = arr1[i<<2] - arr0[i<<2];
+    if (color_mode){
+        D.forEach((d, i) => {
+            var p;
+            i <<= 2;
+            p = beta * data0[i] + alpha * (data1[i] - d);
+            data0[i] = Math.round(p);
+            data1[i++] = Math.round(p + d);
+            p = beta * data0[i] + alpha * (data1[i] - d);
+            data0[i] = Math.round(p);
+            data1[i++] = Math.round(p + d);
+            p = beta * data0[i] + alpha * (data1[i] - d);
+            data0[i] = Math.round(p);
+            data1[i] = Math.round(p + d);
+        })
+    }
+
+    var data = c.getImageData(0, 0, ...size);
+    if (color_mode){
+        phantom_tank_color(data.data, data0, data1, a, b, D);      // Uint8ClampedArray
+    } else {
+        phantom_tank(data.data, arr0, arr1, a, b, D);      // Uint8ClampedArray
+    }
     c.putImageData(data, 0, 0);
     out.src = ctx.toDataURL('image/png');
+    var mask = document.querySelector('#output>span.mask');
+    mask.style.backgroundImage = `url(${out.src})`;
 }
 
 async function save_image(img, name){
@@ -339,7 +425,7 @@ function mouse_move(ctx, img, mask, evt){
     var scale = img.width / img.naturalWidth,
      x = evt.offsetX/scale, y = evt.offsetY/scale;
     mask.style.backgroundPosition = Math.round(75/scale-x)+'px '+Math.round(75/scale-y)+'px';
-    // console.log(x, y, evt.clientX, evt.clientY, scale)
+//    console.log(x, y, evt.clientX, evt.clientY, scale)
     var pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
     mask.firstChild.innerText = `(${pixel[0]} ${pixel[1]} ${pixel[2]})`;
 }
@@ -348,15 +434,15 @@ window.onload = () => {
     var mask0 = document.querySelector('#image0>span.mask');
     var mask1 = document.querySelector('#image1>span.mask');
     var mask2 = document.querySelector('#output>span.mask');
-    var ctx0 = document.querySelector('#image0>canvas').getContext('2d', { willReadFrequently: true });
-    var ctx1 = document.querySelector('#image1>canvas').getContext('2d', { willReadFrequently: true });
-    var ctx2 = document.querySelector('#output>canvas').getContext('2d', { willReadFrequently: true });
+     ctx0 = document.querySelector('#image0>canvas').getContext('2d', { willReadFrequently: true });
+     ctx1 = document.querySelector('#image1>canvas').getContext('2d', { willReadFrequently: true });
+     ctx2 = document.querySelector('#output>canvas').getContext('2d', { willReadFrequently: true });
     mouse_leave = (ctx, img, mask, evt) => {
         mask.style.display = 'none';
     }
     mouse_enter = (ctx, img, mask, evt) => {
         mask.style.display = 'block';
-        mask.style.backgroundImage = `url(${img.src})`;
+//        mask.style.backgroundImage = `url(${img.src})`;
         mask.style.backgroundColor = color_convert.style.color;     //out.style.backgroundColor;
         var scale = img.naturalWidth? img.width / img.naturalWidth: 1;
         mask.style.fontSize = 10/scale+'px';
@@ -374,4 +460,42 @@ window.onload = () => {
     img0.addEventListener("mouseenter", (evt) => mouse_enter(ctx0, img0, mask0, evt));
     img1.addEventListener("mouseenter", (evt) => mouse_enter(ctx1, img1, mask1, evt));
     out .addEventListener("mouseenter", (evt) => mouse_enter(ctx2, out , mask2, evt));
+    weightSlider.addEventListener('input', function() {
+        weightValue.textContent = this.value;
+    });
 }
+// 滑条状态联动
+function mode_change(element) {
+    weightMode.classList.toggle('on');
+    if (element == weightMode){
+        color_mode = element.classList.contains('on');
+        weightSlider.disabled = ! color_mode;
+        weightValue.style.display = weightSlider.style.display = color_mode? 'inline-block': 'none';
+    }
+//    if(this.checked){
+////        cls0.value = 'red green blue';
+////        cls1.value = 'red green blue';
+//        if(img0.src && img0.naturalWidth && img0.naturalHeight){
+//            var ctx0 = document.querySelector('#image0>canvas');
+//            img0.src = ctx0.toDataURL('image/png');
+//        }
+//        if(img1.src && img1.naturalWidth && img1.naturalHeight){
+//            var ctx1 = document.querySelector('#image1>canvas');
+//            img1.src = ctx1.toDataURL('image/png');
+//        }
+//    } else {
+//        if(img0.src && img0.naturalWidth && img0.naturalHeight) gray(File0);
+//        if(img1.src && img1.naturalWidth && img1.naturalHeight) gray(File1);
+//    }
+}
+/**
+ * 彩色权重融合（对应 Python phantom_tank_weigth）
+ * @param {Uint8ClampedArray} data0 第一张图像的 RGBA 数据（已缩放到公共尺寸）
+ * @param {Uint8ClampedArray} data1 第二张图像的 RGBA 数据
+ * @param {number} width 公共宽度
+ * @param {number} height 公共高度
+ * @param {number} bk0 背景色下限 (0-255)
+ * @param {number} bk1 背景色上限 (0-255)
+ * @param {number} alpha 权重 (0-1)
+ * @returns {Uint8ClampedArray} 生成的 RGBA 图像数据
+ */

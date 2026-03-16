@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>PHANTOM TANK@EndlessChian</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+*{
+    box-sizing: border-box;
+    overflow: hidden;
+}
+html,body{
+    font-family: consolas;
+    background: linear-gradient(to right,#9796f0,#fbc7d4);
+    overflow: visible;
+}
+#body{
+    font-style: normal;
+    color: #333;
+    position: relative;
+    display: block;
+    padding: 5%;
+    justify-items: center;
+    cursor: auto;
+    width: 100%;
+    height: max-content;
+}
+canvas{
+    display: none;
+}
+#input{
+    box-sizing: border-box;
+    width: 100%;
+    height: max-content;
+    border: #fbc7d4 solid;
+    padding: 1rem;
+    justify-items: center;
+    cursor: context-menu;
+    box-shadow: rgba(100, 100, 100, 0.2) 3px 2px 1px 0px;
+    border-radius: 10px;
+    position: relative;
+    display: flex;
+}
+#input:focus{
+    box-shadow: rgba(100, 100, 100, 0.2) 4px 3px 2px 1px;
+    transition: 0.3s linear;
+}
+#title{
+    min-height: 2rem;
+}
+input{
+    box-sizing: border-box;
+    margin: 5% 1%;
+    display: inline-grid;
+    width: 69%;
+}
+.image-span{
+    width: 50%;
+}
+textarea{
+    text-align: center;
+    color: hotpink;
+    font-size: larger;
+    font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
+    border-radius: 5px;
+    width: 5rem;
+    min-height: max-content;
+    font-style: italic;
+    height: 2rem;
+    padding: 5px;
+    justify-items: center;
+    display: inline-grid;
+    resize: horizontal;
+    margin: 1% 4%;
+    border: #bbb 1px;
+    box-shadow: inset#ccc 1px 1px 2px, #aaa 1px 1px 2px;
+    outline: none;
+    border: #555 1px solid;
+}
+textarea:focus{
+    box-shadow: inset #dea -1px -1px 1px 1px;
+}
+textarea.error{
+    border-color: rgb(247, 107, 107);
+    transition: 0.1s linear;
+}
+#content{
+    min-height: 5rem;
+}
+.alpha>span{
+    color: #444;
+    font-size: larger;
+    font-weight: bolder;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: pointer;
+    padding: 10px 20px;
+    margin: 10px 4%;
+    width: 24%;
+    place-content: center;
+    display: inline-flex;
+    border: solid #333 1px;
+    border-radius: 10px 10px 0 0;
+    border-bottom: none;
+    transition: 0.1s linear;
+}
+.alpha>span:hover{
+    transform: scale(1.135);
+    transition: 0.3s linear;
+    text-decoration: underline;
+    text-decoration-color: black;
+    text-decoration-style: double;
+}
+.active{
+    text-decoration-style: solid;
+}
+.alpha>span:nth-child(1):hover{
+    color: rgb(247, 80, 51);
+}
+.alpha>span:nth-child(2):hover{
+    color: rgb(90, 231, 170);
+}
+.alpha>span:nth-child(3):hover{
+    color: rgb(155, 81, 240);
+}
+.on{
+    text-decoration: line-through;
+    text-decoration-color: white;
+    text-decoration-style: solid;
+}
+.on:hover{
+    text-decoration-color: white;
+    text-decoration-style: dashed;
+}
+
+div.alpha:after{
+    height: max-content;
+    content: '';
+    border: solid #333 3px;
+    border-bottom: #333;
+    padding: 10px;
+    display: grid;
+    border-radius: 5px;
+    overflow: hidden;
+    margin: -10px 7px;
+}
+.image-span > img{
+    transform: scale(92%);
+    transform-origin: left top;
+    display: grid;
+    border-radius: 2%;
+    min-height: 16rem;
+    margin: 0 4%;
+    background-size: cover;
+    cursor: zoom-in;
+}
+
+#output{
+    display: inline-flex;
+    width: 100%;
+    border: #dea 5px double;
+    border-radius: 10px;
+    margin: 2rem 0;
+}
+
+#output > img{
+    min-width: 50%;
+    max-width: 90%;
+    min-height: 3rem;
+    border: pink 2px solid;
+    margin: 2rem 1rem;
+    border-radius: 5px;
+    transform-origin: center;
+    position: relative;
+    display: inline-block;
+    box-shadow: #444 3px 4px 2px;
+    transition: 0.1s linear;
+}
+
+#output > img:hover{
+    border-color: greenyellow;
+    border-radius: 5px;
+    box-shadow: #333 5px 6px 3px;
+}
+
+#output > span:first-child{
+    width: 10%;
+    min-height: 3rem;
+    border-right: #444 1px solid;
+    background-color: #ddd;
+    margin: 0;
+    opacity: 0.6;
+    display: grid;
+    transition: 0.1s linear;
+}
+
+#output > span:first-child:hover{
+    opacity: 0.9;
+}
+
+#output > span > span{
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    place-self: center;
+    align-content: center;
+    text-align: center;
+    border-bottom: #444 1px solid;
+}
+
+#output > span > span:hover{
+    opacity: 1;
+    font-size: larger;
+    transition: 0.1s linear;
+}
+
+.mask{
+    display: none;
+    width: 100px;
+    height: 100px;
+    position: fixed;
+    font-size: 10px;
+    font-weight: bolder;
+    transform-origin: top left;
+    background-color: aliceblue;
+    background-repeat: no-repeat;
+    border: #f8a0d5 1px solid;
+    border-radius: 50% 50% 0;
+    transform: scale(1.5);
+    text-align: right;
+    place-content: end;
+    z-index: 10;
+    border-bottom-color: aliceblue;
+}
+
+.mask>p{
+    font-weight: bolder;
+    place-content: flex-end;
+    backdrop-filter: brightness(0.5) blur(4px);
+    color: white;
+    /*background: inherit;
+    background-clip: text;
+    color: transparent;
+    filter: invert(1) grayscale(0.5) contrast(1.5) brightness(1.5);
+    height: inherit;*/
+    border-radius: 50% 0 0;
+    margin: 0;
+}
+
+img{
+    z-index: 3;
+}
+
+</style>
+</head>
+<body>
+    <div id="body">
+        <div id="input">
+            
+            <span id="image0" class="image-span">
+                <form id="form0" action="" enctype="multipart/form-data" class="red green blue">
+                    <textarea id="background0" placeholder="background0" onchange="script:color_create(this);">0</textarea>
+                    <input type="file" title="image0" onchange="scripts:lookImage(this);">
+                    <div class="alpha">
+                        <span class="on" onclick="script:this.classList.toggle('on');cls0.classList.toggle('red');grey(File0);">RED</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls0.classList.toggle('green');grey(File0);">GREEN</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls0.classList.toggle('blue');grey(File0);">BLUE</span>
+                    </div>
+                </form>
+                <canvas></canvas><img src="" alt="" onclick="scripts:if(File0.files.length)save_image(img0, File0.files[0].name);">
+                <span class="mask"><p></p></span>
+            </span>
+            <span id="image1" class="image-span">
+                <form id="form1" action="" enctype="multipart/form-data" class="red green blue">
+                    <textarea id="background1" placeholder="background1" onchange="script:color_create(this);">255</textarea>
+                    <input type="file" title="image1" onchange="scripts:lookImage(this);">
+                    <div class="alpha">
+                        <span class="on" onclick="script:this.classList.toggle('on');cls1.classList.toggle('red');grey(File1);">RED</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls1.classList.toggle('green');grey(File1);">GREEN</span>
+                        <span class="on" onclick="script:this.classList.toggle('on');cls1.classList.toggle('blue');grey(File1);">BLUE</span>
+                    </div>
+                </form>
+                <canvas></canvas><img src="" alt="" onclick="scripts:if(File1.files.length)save_image(img1, File1.files[0].name);">
+                <span class="mask"><p></p></span>
+            </span>
+        </div>
+        <span id="output">
+            <span>
+                <span onclick="script:tank_create();">create</span>
+                <span id="convert" class="" onclick="script:this.classList.toggle('revert');color_revert();">0</span>
+            </span>
+            <canvas></canvas>
+            <img src="" alt="" value="save" 
+            onclick="scripts:if(File0.files.length&&File1.files.length)save_image(out, (File0.files[0].name.slice(-20,-4)+'-'+cls0.className+'+'+File1.files[0].name.slice(-20,-4)+'-'+cls1.className).replaceAll(' ','_')+'.png');">
+            <span class="mask"><p></p></span>
+        </span>
+    </div>
+</body>
+<script defer>
+let File0 = document.querySelector('#form0>input');
+let File1 = document.querySelector('#form1>input');
+let img0 = document.querySelector('#image0>img');
+let img1 = document.querySelector('#image1>img');
+let out = document.querySelector('#output>img');
+let cls0 = document.querySelector('#form0');
+let cls1 = document.querySelector('#form1');
+let color0 = document.querySelector('#background0');
+let color1 = document.querySelector('#background1');
+let color_convert = document.querySelector('#convert');
+
+const lookImage = (input) => {
+
+    if(input.files.length){
+        var file = input.files[0];
+        if(file.type.search('image/') == 0){
+            var filereader = new FileReader(), img = new Image();
+            filereader.onload = function(evt){
+                if (filereader.readyState == 2){
+                    var i = document.querySelector(`#${input.title}>img`);
+                    i.src = img.src = evt.target.result;
+                    img.onload = function(){
+                        var scale = document.querySelector(`#${input.title}>form>div.alpha`).offsetWidth / img.naturalWidth;
+                        i.style.width = parseInt(scale * img.width) + 'px';
+
+                        var ctx = document.querySelector(`#${input.title}>canvas`);
+                        ctx.height = img.height;
+                        ctx.width = img.width;
+                        ctx.getContext('2d').drawImage(img, 0, 0);
+                    }
+                }
+            }
+            filereader.readAsDataURL(file);
+        }
+    }
+}
+
+const grey = (input) => {
+    if (! input.files.length )
+        return;
+    var im = input.title.at(-1), li = [];
+    if ((im == 0 && !( img0.height && img0.width))||
+        ((im == 1 && !( img1.height && img1.width)))) return console.log('Error image size.');
+    (im == 0? cls0: cls1).classList.forEach(c =>
+        li.push(c == 'red'? 0: c == 'green'? 1: 2)
+    );
+    if (! li.length) return console.log('Error image color.');
+    var ctx = document.querySelector(`#image${im}>canvas`),
+     data = ctx.getContext('2d').getImageData(0, 0, ctx.width, ctx.height).data,
+      idata = new ImageData(ctx.width, ctx.height),
+       arr = idata.data,
+       ictx = document.createElement('canvas');
+    arr.fill(255);
+    for (var i=0, j=data.length, k=0, u=li.length; i < j; i++,k=0){
+        li.forEach(c => k += data[i + c]);
+        arr[i++] = arr[i++] = arr[i++] = parseInt(k/u);
+    }
+    ictx.width = ctx.width;
+    ictx.height = ctx.height;
+    ictx.getContext('2d').putImageData(idata, 0, 0);
+    (im == 0? img0: img1).src = ictx.toDataURL('image/png');
+    delete ictx;
+}
+
+const between = (x, ab) => ab[0]<x && x<ab[1];
+
+function optimiz(A,B,C,D,E,F,G,H){
+    console.log('e1', A,B, '\ne2', C,D, '\nde', E,F);
+    A -= G; B -= G; C -= H; D -= H;
+    if (A <= 0 && 0 <= B && C <= 0 && 0 <= D && E <= 0 && 0 <= F)
+        return [G, H];
+    var lines = [
+        [Math.max(C, A + E), Math.min(D, A + F)],  //# e1 = A
+        [Math.max(C, B + E), Math.min(D, B + F)],  //# e1 = B
+        [Math.max(A, D - F), Math.min(B, D - E)],  //# e2 = D
+        [Math.max(A, C - F), Math.min(B, C - E)],  //# e2 = C
+        [Math.max(A, C - F), Math.min(B, D - F)],  //# e2 = e1 + F
+        [Math.max(C - E, A), Math.min(B, D - E)]  //# e2 = e1 + E
+    ],
+     points = [
+        F + A >= D? [A, D]: null,
+        between(F+A, [C, D])? [A, F + A]: null,
+        E + A > C? [A, E + A]: null,
+        E <= C-A && C-A <= F? [A, C]: null,
+        E <= D-B && D-B <= F? [B, D]: null,
+        D > F + B? [B, F + B]: null,
+        between(E + B, [C, D])? [B, E + B]: null,
+        E + B <= C? [B, C]: null,
+        D - E >= B && B >= D - F? [B, D]: null,
+        B > D - E? [D - E, D]: null,
+        between(D - F, [A, B])? [D - F, D]: null,
+        D - F <= A? [A, D]: null,
+        C - E >= B? [B, C]: null,
+        between(C - E, [A, B])? [C - E, C]: null,
+        C - F > A? [C - F, C]: null,
+        C - F <= A && A <= C - E? [A, C]: null
+    ],
+     area_points = points.concat([
+        between(0, lines[0])? [A, 0]: null,
+        between(0, lines[1])? [B, 0]: null,
+        between(0, lines[2])? [0, D]: null,
+        between(0, lines[3])? [0, C]: null,
+        between(-F / 2, lines[4])? [-F / 2, F / 2]: null,
+        between(-E / 2, lines[5])? [-E / 2, E / 2]: null
+    ]).filter(n => n !== null),
+     angle_points = points.concat([
+        between(A, lines[0])? [A, A]: null,
+        between(-A, lines[0])? [A, -A]: null,
+        between(B, lines[1])? [B, B]: null,
+        between(-B, lines[1])? [B, -B]: null,
+        between(D, lines[2])? [D, D]: null,
+        between(-D, lines[2])? [D, -D]: null,
+        between(C, lines[3])? [C, C]: null,
+        between(-C, lines[3])? [C, -C]: null,
+        between(-F / 2, lines[4])? [-F / 2, F / 2]: null,
+        between(-E / 2, lines[5])? [-E / 2, E / 2]: null
+    ]).filter(n => n !== null);
+    console.log(area_points);
+    console.log(angle_points);
+    var ee_=area_points[0], e_min=1000;
+    area_points.forEach((x) => {
+        var ne = Math.abs(x[0])+Math.abs(x[1]);
+        if (ne < e_min){
+            ee_ = x;
+            e_min = ne;
+        }
+    });
+    var e1_ = ee_[0], e2_ = ee_[1];
+    console.log(e1_, e2_);
+    var e__min=1000;
+    ee_=angle_points[0], e_min=1000;
+    angle_points.forEach((x) => {
+        var ne = Math.min(Math.abs(x[0] + x[1]), Math.abs(x[0] - x[1])),
+         me = Math.abs(x[0])+Math.abs(x[1]);
+        if (ne < e_min-0.1 || (ne < e_min+0.1 && me < e__min)){
+            ee_ = x;
+            e_min = ne;
+            e__min = me;
+        }
+    });
+    e1_ = (e1_ + ee_[0]) / 2, e2_ = (e2_ + ee_[1]) / 2;
+    console.log(e1_, e2_);
+    return [e1_ + G, e2_ + H];
+}
+
+function phantom_tank(bk, img0, img1, bk0, bk1){
+    const c1 = Float32Array.from(img0), c2 = Float32Array.from(img1), D = c2.map((n, i) => n - c1.at(i));
+    var c1_min=c1[0], c1_max=c1[0], c2_min=c2[0], c2_max=c2[0], d_min=D[0], d_max=D[0];
+    c1.forEach((n) => {
+        if (n > c1_max) c1_max = n;
+        else if (n < c1_min) c1_min = n;
+    })
+    c2.forEach((n) => {
+        if (n > c2_max) c2_max = n;
+        else if (n < c2_min) c2_min = n;
+    })
+    D.forEach((n) => {
+        if (n > d_max) d_max = n;
+        else if (n < d_min) d_min = n;
+    })
+    console.log(d_min, d_max, c1_min, c2_max);
+
+    const k = Math.min(255 / (c2_max - c1_min - d_min), 255 / (c1_max - c1_min), 255 / (c2_max - c2_min)),
+     set_point = (1 - k) * 255/2, db = 1 / (bk1 - bk0);
+    var ee = optimiz(- k * c1_min, 255 - k * c1_max, - k * c2_min, 255 - k * c2_max, - k * d_min, 255 - k * d_max, set_point, set_point),
+    e1 = ee[0],
+    de = ee[1] - e1, p, q, a;
+    console.log(k, ee);
+    D.forEach((d, i) => {
+        a = Math.max(0, (k * d + de) * db);
+        q = Math.max(0, 1 - a);
+        p = q>0.001? Math.min(255, Math.round(Math.max(0, k * c1[i] + e1 - bk0*a) / q)): 255;
+        bk[i*=4]=bk[++i]=bk[++i] = p;
+        bk[++i] = Math.min(255, Math.round(q * 255));
+    });
+}
+
+function paste_image(img, w, bk, w1){
+    const h = img.length/w, h1 = bk.length/w1,
+     p0 = parseInt((w1-w)/2), p1 = parseInt((h1-h)/2);
+    for (var i=0, j, x, y; i<h; i++){
+            y = i+p1;
+        if (0 <= y && y < h1)
+            for (j=0; j<w; j++){
+            x = j+p0;
+            if (0 <= x && x < w1)
+                bk[y*w1+x] = img[i*w+j];
+        }
+    }
+    console.log('pos',p0,p1);
+}
+
+function tank_create(){
+    if(! File0.files.length || ! File1.files.length || ! img0.src || ! img1.src ||
+        ! img0.naturalWidth || ! img1.naturalWidth || ! img0.naturalHeight || ! img1.naturalHeight)
+        return console.log('onclick: wrroy Image type.');
+    var a = parseInt(color0.value), b = parseInt(color1.value);
+    if(isNaN(a) || isNaN(b) || a < 0 || a >= b || b > 255)
+        return console.log('Color unexcepted.', a, b);
+    var size0 = [img0.naturalWidth, img0.naturalHeight], s0 = size0[0]*size0[1],
+     size1 = [img1.naturalWidth, img1.naturalHeight], s1 = size1[0]*size1[1],
+      scale0 = Math.sqrt((s1/s0 + 1)/2), scale1 = Math.sqrt((s0/s1 + 1)/2),
+    size = [
+        parseInt((size0[0]+size1[0])/2),
+        parseInt((size0[1]+size1[1])/2)
+    ], SS = size[0]*size[1],
+     arr0 = new Uint8Array(SS).fill((a+b)/2),
+     arr1 = new Uint8Array(SS).fill((a+b)/2);
+    size0 = size0.map(c=>parseInt(c*scale0));
+    size1 = size1.map(c=>parseInt(c*scale1));
+    var ctx = document.querySelector("#output>canvas");
+    ctx.width = size0[0];
+    ctx.height = size0[1];
+    var c = ctx.getContext('2d', { willReadFrequently: true });
+    c.drawImage(img0, 0, 0, ...size0);
+    var data = c.getImageData(0, 0, ...size0);
+    var temp = new Uint8Array(size0[0] * size0[1]);
+    for (var i=0, j=temp.length; i<j; i++) temp[i] = data.data[i*4];
+    paste_image(temp, size0[0], arr0, size[0] );
+    c.clearRect(0, 0, ...size0);
+
+    ctx.width = size1[0];
+    ctx.height = size1[1];
+    c.drawImage(img1, 0, 0, ...size1);
+    data = c.getImageData(0, 0, ...size1);
+    temp = new Uint8Array(size1[0] * size1[1]);
+    for (var i=0, j=temp.length; i<j; i++) temp[i] = data.data[i*4];
+    paste_image(temp, size1[0], arr1, size[0] );
+    c.clearRect(0, 0, ...size1);
+
+    ctx.width = size[0];
+    ctx.height = size[1];
+    data = c.getImageData(0, 0, ...size);
+    phantom_tank(data.data, arr0, arr1, a, b);
+    c.putImageData(data, 0, 0);
+    out.src = ctx.toDataURL('image/png');
+}
+
+async function save_image(img, name){
+    var a = document.createElement('a');
+    a.download = name || (Math.random() + '.png').slice(2);
+    a.href = img.src;
+    a.click();
+    delete a;
+}
+
+function color_create(text){
+    var c = parseInt(text.value);
+    if (isNaN(c) || c < 0 || c > 255){
+        text.classList.add('error');
+        return;
+    }
+    var a = parseInt(color0.value), b = parseInt(color1.value);
+    if (a >= b){
+        color0.classList.add('error');
+        color1.classList.add('error');
+        return;
+    }
+    color0.classList.remove('error');
+    color1.classList.remove('error');
+
+    out.style.backgroundColor = color_convert.innerText = color_convert.classList.length? b: a;
+}
+
+function color_revert(){
+    var a = parseInt(color0.value), b = parseInt(color1.value),
+    c = color_convert.classList.length? b: a, d = c == a? b: a;
+    color_convert.innerText = c;
+    if(isNaN(a) || isNaN(b) || a < 0 || a >= b || b > 255){
+        color_convert.style.backgroundColor = `#444`;
+        color_convert.style.color = `#000`;
+        return console.log('Color unexcepted.', a, b);
+    }
+    out.style.backgroundColor = color_convert.style.backgroundColor = `rgb(${c},${c},${c})`; //'#'+c.toString(16).repeat(3);
+    color_convert.style.color = `rgb(${d},${d},${d})`;
+}
+
+function mouse_move(ctx, img, mask, evt){
+    mask.style.left = evt.clientX + 'px';
+    mask.style.top = evt.clientY + 'px';
+    if (! img.naturalHeight || ! img.naturalWidth) return;
+    var scale = img.width / img.naturalWidth,
+     x = evt.offsetX/scale, y = evt.offsetY/scale;
+    mask.style.backgroundPosition = Math.round(75/scale-x)+'px '+Math.round(75/scale-y)+'px';
+    var pixel = ctx.getImageData(Math.round(x), Math.round(y), 1, 1).data;
+    mask.firstChild.innerText = `(${pixel[0]} ${pixel[1]} ${pixel[2]})`;
+}
+
+window.onload = () => {
+    var mask0 = document.querySelector('#image0>.mask');
+    var mask1 = document.querySelector('#image1>.mask');
+    var mask2 = document.querySelector('#output>.mask');
+    var ctx0 = document.querySelector('#image0>canvas').getContext('2d', { willReadFrequently: true });
+    var ctx1 = document.querySelector('#image1>canvas').getContext('2d', { willReadFrequently: true });
+    var ctx2 = document.querySelector('#output>canvas').getContext('2d', { willReadFrequently: true });
+    mouse_leave = (ctx, img, mask, evt) => {
+        mask.style.display = 'none';
+    }
+    mouse_enter = (ctx, img, mask, evt) => {
+        mask.style.display = 'block';
+        mask.style.backgroundImage = `url(${img.src})`;
+        mask.style.backgroundColor = color_convert.style.color;     //out.style.backgroundColor;
+        var scale = img.naturalWidth? img.width / img.naturalWidth: 1;
+        mask.style.fontSize = 10/scale+'px';
+        mask.style.transform = `scale(${1.5*scale})`;
+        mask.style.width = Math.round(150/scale)+'px';
+        mask.style.height = Math.round(150/scale)+'px';
+        mouse_move(ctx, img, mask, evt);
+    }
+    img0.addEventListener("mousemove", (evt) => mouse_move(ctx0, img0, mask0, evt));
+    img1.addEventListener("mousemove", (evt) => mouse_move(ctx1, img1, mask1, evt));
+    out .addEventListener("mousemove", (evt) => mouse_move(ctx2, out , mask2, evt));
+    img0.addEventListener("mouseleave", (evt) => mouse_leave(ctx0, img0, mask0, evt));
+    img1.addEventListener("mouseleave", (evt) => mouse_leave(ctx1, img1, mask1, evt));
+    out .addEventListener("mouseleave", (evt) => mouse_leave(ctx2, out , mask2, evt));
+    img0.addEventListener("mouseenter", (evt) => mouse_enter(ctx0, img0, mask0, evt));
+    img1.addEventListener("mouseenter", (evt) => mouse_enter(ctx1, img1, mask1, evt));
+    out .addEventListener("mouseenter", (evt) => mouse_enter(ctx2, out , mask2, evt));
+}
+
+</script>
+</html>

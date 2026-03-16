@@ -90,6 +90,8 @@ e1 ~= 0.
 e2 ~= 127.5
 :warn
 
+:refferer
+https://www.desmos.com/3d/xpelvinv2r
 '''
 def phantom_tank(new: IMGStruct, img0: IMGStruct, img1: IMGStruct, bk0=0, bk1=255):
     """:TODO: Misk two grey image into one RGBA photo, the color can change because backgroung translate(in grey).
@@ -106,8 +108,8 @@ def phantom_tank(new: IMGStruct, img0: IMGStruct, img1: IMGStruct, bk0=0, bk1=25
     """
     assert bk0 < bk1, "If what to get such a different background, Please swap image 0 and image 1"
     assert img0.img.size == img1.img.size == new.img.size
-    arr0 = np.int16(img0.arr)
-    arr1 = np.int16(img1.arr)
+    arr0 = img0.arr.astype(np.int16)
+    arr1 = img1.arr.astype(np.int16)
     # arrdx = arr1 - arr0
     # c_min = arrdx.min()     # (e1 - e2) / k
     # c_max = arrdx.max()     # (b - a) / k + c_min
@@ -225,8 +227,12 @@ def optimiz(A, B, C, D, E, F, G=0, H=0):
     # return A, D
 
 
-def _phantom_base(c1, c2, bk0, bk1):
-    D = np.subtract(c2, c1, dtype=np.int16)
+def _phantom_base(c1, c2, bk0, bk1, D=None):
+    if D is None:
+        if c1.ndim == 3:
+            D = c2.mean(axis=-1, keepdims=True) - c1.mean(axis=-1, keepdims=True)
+        else:
+            D = np.subtract(c2, c1, dtype=np.int16)
     d_min = D.min()     # (e1 - e2) / k
     d_max = D.max()     # (b - a) / k + c_min
     c1_min, c1_max = c1.min(), c1.max()
@@ -238,9 +244,9 @@ def _phantom_base(c1, c2, bk0, bk1):
     e2_area = (- k * c2_min, 255 - k * c2_max)
     set_point = (1 - k) * 255/2
     # print('k', 255 / (c2_max - c1_min - d_min), 255 / (c1_max - c1_min), 255 / (c2_max - c2_min))
-    print('e1', (- k * c1_min, 255 - k * c1_max))
-    print('e2', (- k * c2_min, 255 - k * c2_max))
-    print('de', (- k * d_min, 255 - k * d_max))
+    print('e1', e1_area)
+    print('e2', e2_area)
+    print('de', de_area)
     e1, e2 = optimiz(*e1_area, *e2_area, *de_area, set_point, set_point)
     de = e2 - e1
     print(k, e1, e2)
@@ -249,7 +255,7 @@ def _phantom_base(c1, c2, bk0, bk1):
     # print(x1, x2)
     a = (k * D + de) / (bk1 - bk0)
     q = 1 - a
-    p = np.around((x1-bk0*a)/np.clip(q,0.0001,1)).astype(np.uint8)
+    p = np.clip(np.around((x1-bk0*a)/np.clip(q,1/(bk1 - bk0),1)), 0, 255).astype(np.uint8)
     q *= 255; np.around(q, out=q); q=q.astype(np.uint8)
     # print('q', q)
     # print('p', p)
@@ -262,8 +268,8 @@ def phantom_tank_chess(img0: IMGStruct, img1: IMGStruct, bk0=0, bk1=255):
     :NOTO: It can't reveal color precisely, and cound leak the background color. If merge two gray figure, it's not nesscessary."""
     assert bk0 < bk1, "If what to get such a different background, Please swap image 0 and image 1"
     assert img0.img.size == img1.img.size
-    c1 = np.asarray(img0.img, dtype=np.float32)
-    c2 = np.asarray(img1.img, dtype=np.float32)
+    c1 = img0.arr.astype(np.float32)
+    c2 = img1.arr.astype(np.float32)
     md = (bk0 + bk1) / 2
     H1 = (bk1 - md) / bk1 #max(, _div((bk1 - md), (bk1 - 255)), 0)
     H2 = (md - bk0) / (255 - bk0) #max(_div((bk0 - md), bk0), , 0)
@@ -314,6 +320,37 @@ def phantom_tank_chess(img0: IMGStruct, img1: IMGStruct, bk0=0, bk1=255):
     img = Image.fromarray(x1, mode='RGBA')
     return img
 
+def phantom_tank_chess(new, img0: IMGStruct, img1: IMGStruct, bk0=0, bk1=255):
+    """:TODO: Merge two clourful picture in a cross chess board, it will fill with neutral gray.
+    :NOTO: It can't reveal color precisely, and cound leak the background color. If merge two gray figure, it's not nesscessary."""
+    assert bk0 < bk1, "If what to get such a different background, Please swap image 0 and image 1"
+    assert img0.img.size == img1.img.size
+    c1 = img0.arr
+    c2 = img1.arr
+    c1_max = c1.max()
+    c2_min = c2.min()
+    if c1_max != bk1:
+        c1_min = c1.min()
+        c1 = (c1 - c1_min) * (bk1 / (c1_max - c1_min))
+    if c2_min != bk0:
+        c2_max = c2.max()
+        c2 = (c2 - c2_min) * ((255-bk0) / (c2_max - c2_min)) + bk0
+    q1 = 1 - (bk1 - c1) / (bk1 - bk0)
+    p1 = np.full(q1.shape[:2], bk1, dtype=np.uint8)
+    q1 *= 255; np.round(q1, out=q1); q1 = q1.astype(np.uint8)
+    q2 = 1 - (c2 - bk0) / (bk1 - bk0)
+    p2 = np.full(q2.shape[:2], bk0, dtype=np.uint8)
+    q2 *= 255; np.round(q2, out=q2); q2 = q2.astype(np.uint8)
+    # p1,q1 = _phantom_base(c1, np.array(255), bk0, bk1, D=np.subtract(255, c1, dtype=np.int16))
+    # p2,q2 = _phantom_base(np.array(0), c2, bk0, bk1, D=np.subtract(c2, 0, dtype=np.int16))
+    p1[0::2, 0::2] = p2[0::2, 0::2]
+    q1[0::2, 0::2] = q2[0::2, 0::2]
+    p1[1::2, 1::2] = p2[1::2, 1::2]
+    q1[1::2, 1::2] = q2[1::2, 1::2]
+    new.close()
+    new.img = Image.fromarray(np.concatenate([p1, q1] if p1.ndim==3 else [p1[:,:,None], p1[:,:,None], p1[:,:,None], q1[:,:,None]], axis=-1), mode='RGBA')
+    return new.img
+
 def paste_image(img, background, center=(0, 0)):
     assert (img.img.size[0] <= background.img.size[0] and img.img.size[1] <= background.img.size[1])
     k = min(background.img.size[0] / img.img.size[0], background.img.size[1] / img.img.size[1])
@@ -328,51 +365,130 @@ def paste_image(img, background, center=(0, 0)):
 
 
 def phantom_tank_weigth(new: IMGStruct, img0: IMGStruct, img1: IMGStruct, bk0=0, bk1=255, alpha=0):
-    """:TODO: Merge two colorful picture by using a weight. \alpha nore near to zero then more color behind background0 was remained, otherwise background1.
-    \alpha = \sum{| p*q + b2*(1-q) - rgb_1 |} / \sum{| rgb_2 - rgb_1 |}"""
+    """:TODO: Merge two colorful picture by using a weight. \\alpha nore near to zero then more color behind background0 was remained, otherwise background1.
+    \\alpha = \\sum{| p*q + b2*(1-q) - rgb_1 |} / \\sum{| rgb_2 - rgb_1 |}
+    :refferer: https://www.desmos.com/calculator/ci1ho6zcbh"""
     assert bk0 < bk1, "If what to get such a different background, Please swap image 0 and image 1"
     assert img0.img.size == img1.img.size
     assert 0<= alpha <=1
-    c1 = np.asarray(img0.img, dtype=np.float32)
-    c2 = np.asarray(img1.img, dtype=np.float32)
+    c1 = img0.arr.astype(np.float32)
+    c2 = img1.arr.astype(np.float32)
     D = c2.mean(axis=-1, keepdims=True) - c1.mean(axis=-1, keepdims=True)
     c1 = (1 - alpha) * c1 + alpha * (c2 - D)
     c2 = c1 + D
-    d_min, d_max = D.min(), D.max()
-    c1_min, c1_max = c1.min(), c1.max()
-    c2_max, c2_min = c2.max(), c2.min()
-    print(d_min, d_max, c1_min, c2_max)
-    k = min(255 / (c2_max - c1_min - d_min), 255 / (c1_max - c1_min), 255 / (c2_max - c2_min))
-    de_area = (- k * d_min, 255 - k * d_max)#sorted
-    e1_area = (- k * c1_min, 255 - k * c1_max)
-    e2_area = (- k * c2_min, 255 - k * c2_max)
-    set_point = (1 - k) * 255/2
-    # print('k', 255 / (c2_max - c1_min - d_min), 255 / (c1_max - c1_min), 255 / (c2_max - c2_min))
-    print('e1', (- k * c1_min, 255 - k * c1_max))
-    print('e2', (- k * c2_min, 255 - k * c2_max))
-    print('de', (- k * d_min, 255 - k * d_max))
-    e1, e2 = optimiz(*e1_area, *e2_area, *de_area, set_point, set_point)
-    de = e2 - e1
-    print(k, e1, e2)
-    x1 = c1 * k + e1
-    # x2 = c2 * k + e2
-    # print(x1, x2)
-    a = (k * D + de) / (bk1 - bk0)
-    q = 1 - a
-    p = np.around((x1-bk0+bk0*q)/np.clip(q,0.0001,1))#(bk1 * x1 - bk0 * x2) / w)
-    p = np.clip(p, 0, 255, out=p).astype(np.uint8)
-    q *= 255; np.around(q, out=q); np.clip(q, 0, 255, out=q)
-    q = q.astype(np.uint8)
+    p, q = _phantom_base(c1, c2, bk0, bk1, D)
     new.close()
     new.img = Image.fromarray(np.concatenate([p, q], axis=-1), mode='RGBA')
+    return new.img
+
+def div(a, b, max=1):
+    m = b == 0
+    np.putmask(b, m, 1)
+    c = a / b
+    np.putmask(c, m, max)
+    return c
+
+def max_pooling(a, size, out=None):
+    from scipy.ndimage import maximum_filter
+    out = maximum_filter(a, size, output=out)
+    return out
+
+
+def generate_gaussian_blob_noise(width, height, n_blobs, intensity_range, size_range):
+    """
+    生成高斯斑点噪声图像
+    参数:
+    width: 图像宽度
+    height: 图像高度
+    n_blobs: 斑点数量
+    intensity_range: (min, max) 斑点强度范围
+    size_range: (min, max) 斑点大小范围(标准差)
+
+    返回:
+    noise_image: 生成的噪声图像 (0-1范围)
+    """
+    # 创建空白图像
+    noise_image = np.zeros((height, width))
+    # 生成随机斑点
+    for _ in range(n_blobs):
+        # 随机位置
+        x = np.random.randint(0, width)
+        y = np.random.randint(0, height)
+
+        # 随机强度
+        intensity = np.random.uniform(intensity_range[0], intensity_range[1])
+        # 随机大小
+        size = np.random.uniform(size_range[0], size_range[1])
+        # 创建单个高斯斑点
+        xx, yy = np.meshgrid(np.arange(width), np.arange(height))
+        distance = np.sqrt((xx - x) ** 2 + (yy - y) ** 2)
+        blob = intensity * np.exp(-(distance ** 2) / (2 * size ** 2))
+
+        # 叠加到图像上
+        noise_image += blob
+
+    # 应用高斯滤波使斑点更平滑
+    from scipy.ndimage import gaussian_filter
+    noise_image = gaussian_filter(noise_image, sigma=1)
+    # 归一化到0-1范围
+    noise_image = (noise_image - noise_image.min()) / (noise_image.max() - noise_image.min())
+    return noise_image
+
+
+def phantom_tank_background(new: IMGStruct, img: IMGStruct, bk: IMGStruct, random=False):
+    """:TODO: the figure will only see through with the specified background picture.
+    :NOTO: It can't reveal colors. If show the figure on monochrome canvas, it's not nesscessary."""
+    assert new.img.size == img.img.size == bk.img.size
+    c = np.int16(img.img)
+    b = np.int16(bk.img)
+    d = c - b
+    q_min = np.maximum(div(d, -b, 1), div(d, 255 - b, -1))
+    if q_min.ndim == 3:
+        q_min = np.max(q_min, axis=-1, keepdims=True)
+    if random is not False:
+        q_ = random if type(random) is np.ndarray else np.random.normal(0.5, 0.5, q_min.shape)
+        # q_ = generate_gaussian_blob_noise(c.shape[1], c.shape[0], 100, [0, 1], [100,100])
+        q = np.clip(q_, q_min, 1)
+        # q = np.random.uniform(q_min, 1, c.shape)
+    else:
+        q = q_min
+        # q = max_pooling(q, img.img.size[0]//50, q)
+    # print('cov(c,b)-cov(c,bq) =', (np.correlate(c.flat, b.flat) - np.correlate(c.flat, (b*q).flat))/c.size/2)
+    p=(d+b*q)/np.clip(q, 0.001, None)
+    p=p.clip(0,255).astype(np.uint8)
+    q*=255;q=q.astype(np.uint8)
+    arr = new.arr.copy()
+    if p.ndim == 3:
+        arr[:,:, :3] = p
+    else:
+        arr[:,:,0] = arr[:,:,1] = arr[:,:,2] = p
+    arr[:, :, 3] = q[:,:,0]
+    # print('cov(c,q) =', np.correlate(c.flat, q.flat)/c.size/2)
+    img = Image.fromarray(arr, mode='RGBA')
+    new.close()
+    new.img = img
+    return img
+
+
+def phantom_tank_foreground(new: IMGStruct, img: IMGStruct, fg: IMGStruct, random=False):
+    """:TODO: the figure will only see through with the specified foreground picture.
+    :NOTO: It can't reveal colors. If show the figure on monochrome canvas, it's not nesscessary."""
+    assert new.img.size == img.img.size == bk.img.size
+    c = img.arr
+    b = fg.arr
+    q = b[:,:,3]
+    p = div((c - b[:,:,:3] * (q / 255)), (255 - q), 255)
+    p=np.around(p,out=p).clip(0,255,out=p).astype(np.uint8)
+    p.resize(p.size)
+    new.img.putdata(p)
     return new.img
 
 
 if __name__ == "__main__":
     # path0 = r'D:\picture\EditedPhotos\Screenshot_2022-01-27-11-34-22.jpg'
     # path1 = r'D:\picture\EditedPhotos\Screenshot_2022-01-27-13-31-44.jpg'
-    path0 = r'D:\picture\dd.png'
-    path1 = r'D:\picture\aq.jpg'
+    path0 = r'D:\picture\Screenshot_2022-01-27-13-31-44.JPG'
+    path1 = r'D:\picture\Screenshot_2022-01-27-11-34-22.JPG'
     assert os.path.isfile(path0) and os.path.isfile(path1)
     dir0 = os.path.dirname(path0)
     dir1 = os.path.dirname(path1)
@@ -403,23 +519,24 @@ if __name__ == "__main__":
             size = max(img0.img.size[0], img1.img.size[0]), max(img1.img.size[1], img0.img.size[1])
             with IMGStruct(Image.new('RGB', size, ((a+b)//2,)*3), 0) as img0n:
                 with IMGStruct(Image.new('RGB', size, ((a+b)//2,)*3), 0) as img1n:
-                    paste_image(img0, img0n)
-                    paste_image(img1, img1n)
-                    # new = phantom_tank_chess(img0n, img1n, a, b)
-                    with IMGStruct(Image.new('RGBA', size)) as new:
-                        new = phantom_tank_weigth(new, img0n, img1n, a, b, alpha)
-                        new.save(os.path.join(dir0,
-    f'{os.path.splitext(os.path.basename(path0))[0]}-{os.path.splitext(os.path.basename(path1))[0]}.png'))
     #         with IMGStruct(Image.new('L', size), 0) as img0n:
     #             with IMGStruct(Image.new('L', size), 0) as img1n:
-    #                 paste_image(img0, img0n)
-    #                 paste_image(img1, img1n)
-    #
-    #                 with IMGStruct(Image.new('RGBA', size)) as new:
-    #                     phantom_tank(new, img0n, img1n, a, b)
-    #                     new.img.save(os.path.join(dir0,
-    # f'{os.path.splitext(os.path.basename(path0))[0]}-{os.path.splitext(os.path.basename(path1))[0]}.png')
+                    paste_image(img0, img0n)
+                    paste_image(img1, img1n)
+                    with IMGStruct(Image.new('RGBA', size)) as new:
+                        phantom_tank_weigth(new, img0n, img1n, a, b, alpha)
+    #                     phantom_tank_chess(new, img0n, img1n, a, b)
+                        # phantom_tank(new, img0n, img1n, a, b)
+    #                     img0n.img.save(os.path.join(dir0,
+    # f'{os.path.splitext(os.path.basename(path0))[0]}-{os.path.splitext(os.path.basename(path1))[0]}-fg.png')
     #                                 )
+    #                     phantom_tank_background(new, img0n, img1n, )
+                        # img1n.img.save(os.path.join(dir0,
+    # f'{os.path.splitext(os.path.basename(path0))[0]}-{os.path.splitext(os.path.basename(path1))[0]}-bk.png')
+    #                                 )
+                        new.img.save(os.path.join(dir0,
+    f'{os.path.splitext(os.path.basename(path0))[0]}-{os.path.splitext(os.path.basename(path1))[0]}.png')
+                                    )
 
 def optimiz(A,B,C,D,E,F,G=0,H=0):
     A -= G; B -= G; C -= H; D -= H
